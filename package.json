@@ -1,0 +1,23 @@
+{
+    "name": "backbone-delta",
+    "description": "Detect and apply changes on Backbone.js models",
+    "author": "Stéphan Kochen <stephan@kochen.nl>",
+    "version": "0.1.0",
+    "homepage": "https://github.com/Two-Screen/backbone-delta",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/Two-Screen/backbone-delta.git"
+    },
+    "main": "backbone-delta.js",
+    "dependencies": {
+        "underscore": "1"
+    },
+    "devDependencies": {
+        "backbone": "0.9",
+        "tap": "0.3"
+    },
+    "scripts": {
+        "test": "tap test.js",
+        "minify": "uglifyjs -o backbone-delta.min.js backbone-delta.js"
+    }
+}
