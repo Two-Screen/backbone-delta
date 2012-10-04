@@ -99,11 +99,11 @@ BBDelta.extend = function(Backbone) {
     var methods = BBDelta.curry(Backbone);
 
     Backbone.Model.prototype.reset = function(attrs, options) {
-        methods.resetModel(this, attrs, options);
+        return methods.resetModel(this, attrs, options);
     };
 
     Backbone.Collection.prototype.delta = function(models, options) {
-        methods.collectionDelta(this, models, options);
+        return methods.collectionDelta(this, models, options);
     };
 };
 
