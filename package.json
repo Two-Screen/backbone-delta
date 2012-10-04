@@ -14,7 +14,8 @@
     },
     "devDependencies": {
         "backbone": "0.9",
-        "tap": "0.3"
+        "tap": "0.3",
+        "uglify-js": "1"
     },
     "scripts": {
         "test": "tap test.js",
