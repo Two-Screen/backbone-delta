@@ -1,4 +1,4 @@
-## Backbone-delta
+## Backbone-delta [![Build Status](https://secure.travis-ci.org/Two-Screen/backbone-delta.png)](http://travis-ci.org/Two-Screen/backbone-delta)
 
 A couple of extra methods for [Backbone.js], related to changing models
 and collections.
