@@ -69,7 +69,7 @@ BBDelta.curry = function(Backbone) {
     // attributes will be reset. Other models will be added or removed.
     //
     // If no matching models are found at all, this does a normal reset.
-    var collectionDelta = function(collection, models, options) {
+    var deltaCollection = function(collection, models, options) {
         var haveId = {}, matching = [], added = [], removed, model;
         options || (options = {});
         models = _.isArray(models) ? models.slice() : [models];
@@ -126,7 +126,7 @@ BBDelta.curry = function(Backbone) {
     return {
         resetModel: resetModel,
         fetchModel: fetchModel,
-        collectionDelta: collectionDelta,
+        deltaCollection: deltaCollection,
         fetchCollection: fetchCollection
     };
 };
@@ -145,7 +145,7 @@ BBDelta.extend = function(Backbone) {
 
     var CollectionProto = Backbone.Collection.prototype;
     CollectionProto.delta = function(models, options) {
-        return methods.collectionDelta(this, models, options);
+        return methods.deltaCollection(this, models, options);
     };
     CollectionProto.fetch = function(options) {
         return methods.fetchCollection(this, options);
