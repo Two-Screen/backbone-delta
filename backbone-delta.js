@@ -173,6 +173,20 @@ BBDelta.extend = function(Backbone, options) {
             }
         };
     }
+
+    return Backbone;
+};
+
+// Inherit from Backbone.js and create subclasses of Model and Collection.
+BBDelta.inherit = function(Backbone, options) {
+    var ctor = function() {};
+    ctor.prototype = Backbone;
+
+    var sub = new ctor();
+    sub.Model = Backbone.Model.extend();
+    sub.Collection = Backbone.Collection.extend();
+
+    return BBDelta.extend(sub, options);
 };
 
 // In the browser, automatically extend Backbone.js.

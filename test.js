@@ -2,7 +2,7 @@ var test = require('tap').test;
 
 var _ = require('underscore');
 var Backbone = require('backbone');
-require('./').extend(Backbone);
+var BBDelta = require('./').inherit(Backbone);
 
 function expectEvent(t, obj, name, block) {
     var seen = false;
@@ -20,7 +20,7 @@ function expectEvent(t, obj, name, block) {
 test('resetModel', function(t) {
     t.plan(10);
 
-    var model = new Backbone.Model();
+    var model = new BBDelta.Model();
 
     expectEvent(t, model, 'change:foo', function() {
         t.ok(model.reset({ foo: 5 }), "add first attribute");
@@ -52,7 +52,7 @@ test('resetModel', function(t) {
 test('collectionDelta', function(t) {
     t.plan(11);
 
-    var collection = new Backbone.Collection();
+    var collection = new BBDelta.Collection();
 
     expectEvent(t, collection, 'reset', function() {
         t.ok(collection.delta([
