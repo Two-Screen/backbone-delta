@@ -22,7 +22,7 @@ BBDelta.curry = function(Backbone) {
 
     // Reset the model's attributes.
     //
-    // This is similar to set, but will also unset attribtues not in `attrs`.
+    // This is similar to set, but will also unset attributes not in `attrs`.
     var resetModel = function(model, attrs, options) {
         var now = model.attributes, unset = {}, attr;
         options || (options = {});
@@ -47,7 +47,7 @@ BBDelta.curry = function(Backbone) {
         return model;
     };
 
-    // Variant of `Model#fetch` that adds the `reset` option.
+    // Variant of `Model#fetch` that uses `resetModel`.
     var fetchResetModel = function(model, options) {
         options = options ? _.clone(options) : {};
 
@@ -65,7 +65,7 @@ BBDelta.curry = function(Backbone) {
 
     // Reset the collection, applying small changes without a `reset` event.
     //
-    // Models are regarded the same if their IDs match, in which case, its
+    // Models are regarded the same if their IDs match, in which case, the
     // attributes will be reset. Other models will be added or removed.
     //
     // If no matching models are found at all, this does a normal reset.
@@ -105,7 +105,7 @@ BBDelta.curry = function(Backbone) {
         return collection;
     };
 
-    // Variant of `Collection#fetch` that adds the `delta` option.
+    // Variant of `Collection#fetch` that uses `deltaCollection`.
     var fetchDeltaCollection = function(collection, options) {
         options = options ? _.clone(options) : {};
         if (options.parse === undefined) options.parse = true;
