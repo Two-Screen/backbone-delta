@@ -1,8 +1,7 @@
 var test = require('tap').test;
 
 var _ = require('underscore');
-var Backbone = require('backbone');
-var BBDelta = require('./').inherit(Backbone);
+var BBDelta = require('./');
 
 function expectEvent(t, obj, name, block) {
     var seen = false;

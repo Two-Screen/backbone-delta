@@ -4,29 +4,31 @@
 (function() {
 
 // Look for Underscore.js.
-var _, BBDelta;
+var _;
 if (typeof(require) !== 'undefined') {
     _ = require('underscore');
-    BBDelta = exports;
 }
 else {
     _ = window._;
-    BBDelta = window.BBDelta = {};
 }
 
-// We need an instance of Backbone.js to work with.
-// This creates our functions for a given instance.
-BBDelta.curry = function(Backbone) {
+// Extend a Backbone.js instance. The option `noPatch` will prevent
+// monkey-patching, and only add methods.
+var extend = function(Backbone, options) {
+    options || (options = {});
+
     var Model = Backbone.Model;
+    var ModelProto = Model.prototype;
     var Collection = Backbone.Collection;
+    var CollectionProto = Collection.prototype;
 
     // Reset the model's attributes.
     //
     // This is similar to set, but will also unset attributes not in `attrs`.
-    var resetModel = function(model, attrs, options) {
-        var now = model.attributes, unset = {}, attr;
+    ModelProto.reset = function(attrs, options) {
+        var now = this.attributes, unset = {}, attr;
         options || (options = {});
-        if (!attrs) return model;
+        if (!attrs) return this;
         if (attrs instanceof Model) attrs = attrs.attributes;
         attrs = _.clone(attrs);
 
@@ -39,28 +41,25 @@ BBDelta.curry = function(Backbone) {
         }
 
         // Apply changes.
-        if (!model.set(attrs, options)) return false;
+        if (!this.set(attrs, options)) return false;
         for (attr in unset) {
             delete now[attr];
         }
 
-        return model;
+        return this;
     };
 
-    // Variant of `Model#fetch` that uses `resetModel`.
-    var fetchResetModel = function(model, options) {
+    // Variant of `Model#fetch` that uses `Model#reset`.
+    ModelProto.fetchReset = function(options) {
         options = options ? _.clone(options) : {};
-
+        var model = this;
         var success = options.success;
         options.success = function(resp, status, xhr) {
-            var parsed = model.parse(resp, xhr);
-            if (!resetModel(model, parsed, options)) return false;
+            if (!model.reset(model.parse(resp, xhr), options)) return false;
             if (success) success(model, resp);
         };
         options.error = Backbone.wrapError(options.error, model, options);
-
-        var sync = model.sync || Backbone.sync;
-        return sync.call(model, 'read', model, options);
+        return (this.sync || Backbone.sync).call(this, 'read', this, options);
     };
 
     // Reset the collection, applying small changes without a `reset` event.
@@ -69,107 +68,74 @@ BBDelta.curry = function(Backbone) {
     // attributes will be reset. Other models will be added or removed.
     //
     // If no matching models are found at all, this does a normal reset.
-    var deltaCollection = function(collection, models, options) {
+    CollectionProto.delta = function(models, options) {
         var haveId = {}, matching = [], added = [], removed, model;
         options || (options = {});
         models = _.isArray(models) ? models.slice() : [models];
 
         // Validate the new models, and look for matching existing models.
         for (i = 0, length = models.length; i < length; i++) {
-            model = models[i] = collection._prepareModel(models[i], options);
+            model = models[i] = this._prepareModel(models[i], options);
             if (!model) {
                 throw new Error("Can't add an invalid model to a collection");
             }
             haveId[model.id] = true;
-            (collection.get(model.id) ? matching : added).push(model);
+            (this.get(model.id) ? matching : added).push(model);
         }
 
         // Short-circuit to normal reset, if possible.
         if (matching.length === 0) {
-            return collection.reset(models, options);
+            return this.reset(models, options);
         }
 
         // Determine which models are to be removed.
-        removed = collection.select(function(model) {
+        removed = this.select(function(model) {
             return !haveId[model.id];
         });
 
         // Apply changes.
-        collection.remove(removed, options);
+        this.remove(removed, options);
         _.each(matching, function(model) {
-            var existing = collection.get(model);
-            resetModel(existing, model, options);
-        });
-        collection.add(added, options);
+            this.get(model).reset(model, options);
+        }, this);
+        this.add(added, options);
 
-        return collection;
+        return this;
     };
 
-    // Variant of `Collection#fetch` that uses `deltaCollection`.
-    var fetchDeltaCollection = function(collection, options) {
+    // Variant of `Collection#fetch` that uses `Collection#delta`.
+    CollectionProto.fetchDelta = function(options) {
         options = options ? _.clone(options) : {};
         if (options.parse === undefined) options.parse = true;
-
+        var collection = this;
         var success = options.success;
         options.success = function(resp, status, xhr) {
-            var parsed = collection.parse(resp, xhr);
-            deltaCollection(collection, parsed, options);
+            collection.delta(collection.parse(resp, xhr), options);
             if (success) success(collection, resp);
         };
         options.error = Backbone.wrapError(options.error, collection, options);
-
-        var sync = collection.sync || Backbone.sync;
-        return sync.call(collection, 'read', collection, options);
+        return (this.sync || Backbone.sync).call(this, 'read', this, options);
     };
 
-    return {
-        resetModel: resetModel,
-        fetchResetModel: fetchResetModel,
-        deltaCollection: deltaCollection,
-        fetchDeltaCollection: fetchDeltaCollection
-    };
-};
-
-// Extend an instance of Backbone.js.
-BBDelta.extend = function(Backbone, options) {
-    options || (options = {});
-
-    var methods = BBDelta.curry(Backbone);
-    var ModelProto = Backbone.Model.prototype;
-    var CollectionProto = Backbone.Collection.prototype;
-
-    ModelProto.reset = function(attrs, options) {
-        return methods.resetModel(this, attrs, options);
-    };
-    ModelProto.fetchReset = function(options) {
-        return methods.fetchResetModel(this, options);
-    };
-
-    CollectionProto.delta = function(models, options) {
-        return methods.deltaCollection(this, models, options);
-    };
-    CollectionProto.fetchDelta = function(options) {
-        return methods.fetchDeltaCollection(this, options);
-    };
-
+    // Patch `fetch` methods to add options.
     if (!options.noPatch) {
-        var fetchModel = ModelProto.fetch;
+        var origModelFetch = ModelProto.fetch;
         ModelProto.fetch = function(options) {
             if (options && options.reset) {
-                return methods.fetchResetModel(this, options);
+                return this.fetchReset(options);
             }
             else {
-                return fetchModel.call(this, options);
+                return origModelFetch.call(this, options);
             }
         };
 
-        var fetchCollection = CollectionProto.fetch;
+        var origCollectionFetch = CollectionProto.fetch;
         CollectionProto.fetch = function(options) {
             if (options && options.delta) {
-                return methods.fetchDeltaCollection(this, options);
+                return this.fetchDelta(options);
             }
             else {
-                return fetchCollection.call(this, options);
+                return origCollectionFetch.call(this, options);
             }
         };
     }
@@ -178,20 +144,28 @@ BBDelta.extend = function(Backbone, options) {
 };
 
 // Inherit from Backbone.js and create subclasses of Model and Collection.
-BBDelta.inherit = function(Backbone, options) {
+var inherit = function(Backbone, options) {
     var ctor = function() {};
     ctor.prototype = Backbone;
-
     var sub = new ctor();
+
     sub.Model = Backbone.Model.extend();
     sub.Collection = Backbone.Collection.extend({ model: sub.Model });
 
-    return BBDelta.extend(sub, options);
+    return extend(sub, options);
 };
 
-// In the browser, automatically extend Backbone.js.
-if (typeof(window) !== 'undefined' && window.Backbone) {
-    BBDelta.extend(window.Backbone);
+// Export.
+var BBDelta;
+if (typeof(require) !== 'undefined') {
+    BBDelta = inherit(require('backbone'));
+    module.exports = BBDelta;
 }
+else {
+    BBDelta = inherit(window.Backbone);
+    window.BBDelta = BBDelta;
+}
+BBDelta.extend = extend;
+BBDelta.inherit = inherit;
 
 })();
