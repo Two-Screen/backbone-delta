@@ -48,13 +48,13 @@ BBDelta.curry = function(Backbone) {
     };
 
     // Variant of `Model#fetch` that adds the `reset` option.
-    var fetchModel = function(model, options) {
+    var fetchResetModel = function(model, options) {
         options = options ? _.clone(options) : {};
 
         var success = options.success;
         options.success = function(resp, status, xhr) {
-            var method = options.reset ? 'reset' : 'set';
-            if (!model[method](model.parse(resp, xhr), options)) return false;
+            var parsed = model.parse(resp, xhr);
+            if (!resetModel(model, parsed, options)) return false;
             if (success) success(model, resp);
         };
         options.error = Backbone.wrapError(options.error, model, options);
@@ -97,7 +97,8 @@ BBDelta.curry = function(Backbone) {
         // Apply changes.
         collection.remove(removed, options);
         _.each(matching, function(model) {
-            collection.get(model).reset(model, options);
+            var existing = collection.get(model);
+            resetModel(existing, model, options);
         });
         collection.add(added, options);
 
@@ -105,16 +106,14 @@ BBDelta.curry = function(Backbone) {
     };
 
     // Variant of `Collection#fetch` that adds the `delta` option.
-    var fetchCollection = function(collection, options) {
+    var fetchDeltaCollection = function(collection, options) {
         options = options ? _.clone(options) : {};
         if (options.parse === undefined) options.parse = true;
 
         var success = options.success;
         options.success = function(resp, status, xhr) {
-            var method = 'reset';
-            options.delta && (method = 'delta');
-            options.add && (method = 'add');
-            collection[method](collection.parse(resp, xhr), options);
+            var parsed = collection.parse(resp, xhr);
+            deltaCollection(collection, parsed, options);
             if (success) success(collection, resp);
         };
         options.error = Backbone.wrapError(options.error, collection, options);
@@ -125,31 +124,55 @@ BBDelta.curry = function(Backbone) {
 
     return {
         resetModel: resetModel,
-        fetchModel: fetchModel,
+        fetchResetModel: fetchResetModel,
         deltaCollection: deltaCollection,
-        fetchCollection: fetchCollection
+        fetchDeltaCollection: fetchDeltaCollection
     };
 };
 
 // Extend an instance of Backbone.js.
-BBDelta.extend = function(Backbone) {
-    var methods = BBDelta.curry(Backbone);
+BBDelta.extend = function(Backbone, options) {
+    options || (options = {});
 
+    var methods = BBDelta.curry(Backbone);
     var ModelProto = Backbone.Model.prototype;
+    var CollectionProto = Backbone.Collection.prototype;
+
     ModelProto.reset = function(attrs, options) {
         return methods.resetModel(this, attrs, options);
     };
-    ModelProto.fetch = function(options) {
-        return methods.fetchModel(this, options);
+    ModelProto.fetchReset = function(options) {
+        return methods.fetchResetModel(this, options);
     };
 
-    var CollectionProto = Backbone.Collection.prototype;
     CollectionProto.delta = function(models, options) {
         return methods.deltaCollection(this, models, options);
     };
-    CollectionProto.fetch = function(options) {
-        return methods.fetchCollection(this, options);
+    CollectionProto.fetchDelta = function(options) {
+        return methods.fetchDeltaCollection(this, options);
     };
+
+    if (!options.noPatch) {
+        var fetchModel = ModelProto.fetch;
+        ModelProto.fetch = function(options) {
+            if (options && options.reset) {
+                return methods.fetchResetModel(this, options);
+            }
+            else {
+                return fetchModel.call(this, options);
+            }
+        };
+
+        var fetchCollection = CollectionProto.fetch;
+        CollectionProto.fetch = function(options) {
+            if (options && options.delta) {
+                return methods.fetchDeltaCollection(this, options);
+            }
+            else {
+                return fetchCollection.call(this, options);
+            }
+        };
+    }
 };
 
 // In the browser, automatically extend Backbone.js.
