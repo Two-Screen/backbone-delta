@@ -18,7 +18,7 @@ function expectEvent(t, obj, name, block) {
 }
 
 test('resetModel', function(t) {
-    t.plan(7);
+    t.plan(10);
 
     var model = new Backbone.Model();
 
@@ -32,13 +32,25 @@ test('resetModel', function(t) {
 
     expectEvent(t, model, 'change:foo', function() {
         t.ok(model.reset({ bar: 8 }), "remove first attribute");
+        t.notOk(_.has(model.attributes, 'foo'), "attr should be deleted");
     });
 
-    t.notOk(_.has(model.attributes, 'foo'), 'attribute should be deleted');
+    expectEvent(t, model, 'change:bar', function() {
+        model.sync = function(method, model, options) {
+            options.success({});
+        };
+
+        model.fetch({ reset: false });
+        t.ok(_.has(model.attributes, 'bar'), "fetch & set keeps attr");
+
+        model.fetch({ reset: true });
+        t.notOk(_.has(model.attributes, 'bar'), "fetch & reset deletes attr");
+    });
+
 });
 
 test('collectionDelta', function(t) {
-    t.plan(10);
+    t.plan(11);
 
     var collection = new Backbone.Collection();
 
@@ -72,5 +84,16 @@ test('collectionDelta', function(t) {
         t.ok(collection.delta([
             { id: 3 }
         ]), "replace contents");
+    });
+
+    expectEvent(t, collection, 'add', function() {
+        collection.sync = function(method, collection, options) {
+            options.success([
+                { id: 3 },
+                { id: 7 }
+            ]);
+        };
+
+        collection.fetch({ delta: true });
     });
 });

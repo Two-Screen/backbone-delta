@@ -14,7 +14,7 @@ else {
     BBDelta = window.BBDelta = {};
 }
 
-// We need an instance of Backbone.js to do instanceof checks.
+// We need an instance of Backbone.js to work with.
 // This creates our functions for a given instance.
 BBDelta.curry = function(Backbone) {
     var Model = Backbone.Model;
@@ -45,6 +45,22 @@ BBDelta.curry = function(Backbone) {
         }
 
         return model;
+    };
+
+    // Variant of `Model#fetch` that adds the `reset` option.
+    var fetchModel = function(model, options) {
+        options = options ? _.clone(options) : {};
+
+        var success = options.success;
+        options.success = function(resp, status, xhr) {
+            var method = options.reset ? 'reset' : 'set';
+            if (!model[method](model.parse(resp, xhr), options)) return false;
+            if (success) success(model, resp);
+        };
+        options.error = Backbone.wrapError(options.error, model, options);
+
+        var sync = model.sync || Backbone.sync;
+        return sync.call(model, 'read', model, options);
     };
 
     // Reset the collection, applying small changes without a `reset` event.
@@ -88,9 +104,30 @@ BBDelta.curry = function(Backbone) {
         return collection;
     };
 
+    // Variant of `Collection#fetch` that adds the `delta` option.
+    var fetchCollection = function(collection, options) {
+        options = options ? _.clone(options) : {};
+        if (options.parse === undefined) options.parse = true;
+
+        var success = options.success;
+        options.success = function(resp, status, xhr) {
+            var method = 'reset';
+            options.delta && (method = 'delta');
+            options.add && (method = 'add');
+            collection[method](collection.parse(resp, xhr), options);
+            if (success) success(collection, resp);
+        };
+        options.error = Backbone.wrapError(options.error, collection, options);
+
+        var sync = collection.sync || Backbone.sync;
+        return sync.call(collection, 'read', collection, options);
+    };
+
     return {
         resetModel: resetModel,
-        collectionDelta: collectionDelta
+        fetchModel: fetchModel,
+        collectionDelta: collectionDelta,
+        fetchCollection: fetchCollection
     };
 };
 
@@ -98,12 +135,20 @@ BBDelta.curry = function(Backbone) {
 BBDelta.extend = function(Backbone) {
     var methods = BBDelta.curry(Backbone);
 
-    Backbone.Model.prototype.reset = function(attrs, options) {
+    var ModelProto = Backbone.Model.prototype;
+    ModelProto.reset = function(attrs, options) {
         return methods.resetModel(this, attrs, options);
     };
+    ModelProto.fetch = function(options) {
+        return methods.fetchModel(this, options);
+    };
 
-    Backbone.Collection.prototype.delta = function(models, options) {
+    var CollectionProto = Backbone.Collection.prototype;
+    CollectionProto.delta = function(models, options) {
         return methods.collectionDelta(this, models, options);
+    };
+    CollectionProto.fetch = function(options) {
+        return methods.fetchCollection(this, options);
     };
 };
 
