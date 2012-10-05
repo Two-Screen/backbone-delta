@@ -1,4 +1,4 @@
-//! backbone-delta.js 0.2.0, https://github.com/Two-Screen/backbone-delta
+//! backbone-delta.js 0.3.0, https://github.com/Two-Screen/backbone-delta
 //! © 2012 Stéphan Kochen, Angry Bytes. MIT licensed.
 
 (function() {
