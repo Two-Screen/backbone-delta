@@ -184,7 +184,7 @@ BBDelta.inherit = function(Backbone, options) {
 
     var sub = new ctor();
     sub.Model = Backbone.Model.extend();
-    sub.Collection = Backbone.Collection.extend();
+    sub.Collection = Backbone.Collection.extend({ model: sub.Model });
 
     return BBDelta.extend(sub, options);
 };
