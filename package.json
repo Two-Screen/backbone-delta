@@ -2,7 +2,7 @@
     "name": "backbone-delta",
     "description": "Detect and apply changes on Backbone.js models",
     "author": "Stéphan Kochen <stephan@kochen.nl>",
-    "version": "0.1.2",
+    "version": "0.2.0",
     "homepage": "https://github.com/Two-Screen/backbone-delta",
     "repository": {
         "type": "git",
