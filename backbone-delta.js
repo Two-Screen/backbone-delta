@@ -52,14 +52,14 @@ var extend = function(Backbone, options) {
     // Variant of `Model#fetch` that uses `Model#reset`.
     ModelProto.fetchReset = function(options) {
         options = options ? _.clone(options) : {};
-        var model = this;
+        if (options.parse === void 0) options.parse = true;
         var success = options.success;
-        options.success = function(resp, status, xhr) {
-            if (!model.reset(model.parse(resp, xhr), options)) return false;
+        options.success = function(model, resp, options) {
+            var parsed = model.parse(resp, options);
+            if (!model.reset(parsed, options)) return false;
             if (success) success(model, resp);
         };
-        options.error = Backbone.wrapError(options.error, model, options);
-        return (this.sync || Backbone.sync).call(this, 'read', this, options);
+        return this.sync('read', this, options);
     };
 
     // Reset the collection, applying small changes without a `reset` event.
@@ -106,15 +106,14 @@ var extend = function(Backbone, options) {
     // Variant of `Collection#fetch` that uses `Collection#delta`.
     CollectionProto.fetchDelta = function(options) {
         options = options ? _.clone(options) : {};
-        if (options.parse === undefined) options.parse = true;
-        var collection = this;
+        if (options.parse === void 0) options.parse = true;
         var success = options.success;
-        options.success = function(resp, status, xhr) {
-            collection.delta(collection.parse(resp, xhr), options);
-            if (success) success(collection, resp);
+        options.success = function(collection, resp, options) {
+            var parsed = collection.parse(resp, options);
+            collection.delta(parsed, options);
+            if (success) success(collection, resp, options);
         };
-        options.error = Backbone.wrapError(options.error, collection, options);
-        return (this.sync || Backbone.sync).call(this, 'read', this, options);
+        return this.sync('read', this, options);
     };
 
     // Patch `fetch` methods to add options.

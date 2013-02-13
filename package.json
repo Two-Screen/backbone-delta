@@ -11,7 +11,7 @@
     "main": "backbone-delta.js",
     "dependencies": {
         "underscore": "1",
-        "backbone": "0.9"
+        "backbone": "0.9.10"
     },
     "devDependencies": {
         "tap": "0.3",

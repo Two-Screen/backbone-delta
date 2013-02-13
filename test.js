@@ -36,7 +36,7 @@ test('resetModel', function(t) {
 
     expectEvent(t, model, 'change:bar', function() {
         model.sync = function(method, model, options) {
-            options.success({});
+            options.success(model, {}, options);
         };
 
         model.fetch({ reset: false });
@@ -87,10 +87,10 @@ test('collectionDelta', function(t) {
 
     expectEvent(t, collection, 'add', function() {
         collection.sync = function(method, collection, options) {
-            options.success([
+            options.success(collection, [
                 { id: 3 },
                 { id: 7 }
-            ]);
+            ], options);
         };
 
         collection.fetch({ delta: true });
