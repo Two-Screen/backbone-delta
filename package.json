@@ -19,6 +19,6 @@
     },
     "scripts": {
         "test": "tap test.js",
-        "minify": "uglifyjs -o backbone-delta.min.js backbone-delta.js"
+        "minify": "uglifyjs --comments '/^!/' -o backbone-delta.min.js backbone-delta.js"
     }
 }
