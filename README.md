@@ -1,5 +1,7 @@
 ## Backbone-delta [![Build Status](https://secure.travis-ci.org/Two-Screen/backbone-delta.png)](http://travis-ci.org/Two-Screen/backbone-delta)
 
+**This project is unmaintained.**
+
 A couple of extra methods for [Backbone.js], related to changing models
 and collections.
 
